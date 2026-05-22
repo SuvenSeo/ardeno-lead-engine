@@ -156,6 +156,8 @@ def assert_draft_sendable(db: Session, *, draft: EmailDraft, settings: Settings,
         raise ComplianceError("Draft must be approved before sending.")
     if not draft.contact:
         raise ComplianceError("Draft needs a contact before sending.")
+    if draft.contact.email_status in {"invalid", "risky"}:
+        raise ComplianceError(f"Contact email is not sendable: {draft.contact.email_status}.")
     suppressed = suppression_matches(db, email=draft.contact.email, company=draft.company)
     if suppressed:
         raise ComplianceError(f"Recipient is suppressed by {suppressed.value_type}:{suppressed.value}.")

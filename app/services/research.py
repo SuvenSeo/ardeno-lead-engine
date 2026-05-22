@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import Settings
 from app.models import Company, Contact, EmailDraft, LeadScore, ResearchRun, now_utc
 from app.schemas import CompanyInput, ContactInput, ResearchRunCreate
-from app.services.drafting import generate_ai_or_template_draft
+from app.services.drafting import generate_ai_or_template_draft, select_contact
 from app.services.scoring import score_company
 from app.services.sources.clearout import ClearoutNotConfigured, verify_email
 from app.services.sources.google_places import GOOGLE_PLACES_FIELD_MASK, GooglePlacesNotConfigured, text_search
@@ -203,19 +203,21 @@ async def run_research(db: Session, settings: Settings, payload: ResearchRunCrea
                     and drafted < max_drafts
                     and score
                     and score.total_score >= threshold
-                    and company.contacts
+                    and select_contact(company) is not None
                     and not has_open_draft(db, company)
                 ):
                     await generate_ai_or_template_draft(db, company=company, settings=settings, use_ai=True)
                     drafted += 1
                     db.flush()
 
-        run.status = "completed"
+        run.status = "failed" if seen == 0 and provider_errors else "completed"
         run.companies_seen = seen
         run.companies_created = created
         run.companies_enriched = enriched
         run.drafts_created = drafted
         run.source_summary = {**run.source_summary, "provider_errors": provider_errors, "actor": actor}
+        if run.status == "failed":
+            run.error = "; ".join(provider_errors)[:1000] or "Research completed with no discoverable companies."
     except Exception as exc:
         run.status = "failed"
         run.error = str(exc)[:1000]

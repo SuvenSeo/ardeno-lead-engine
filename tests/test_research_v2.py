@@ -79,10 +79,110 @@ def test_research_run_discovers_enriches_scores_and_drafts(client, admin_headers
     assert recommendations[0]["name"] == "Ardeno Test Clinic"
     assert recommendations[0]["contact_quality"] == "verified"
 
+    drafts = client.get(f"/api/v1/drafts?company_id={recommendations[0]['id']}", headers=admin_headers).json()
+    assert drafts[0]["status"] == "draft"
+
+    blocked = client.post(
+        f"/api/v1/drafts/{drafts[0]['id']}/send",
+        json={"sandbox": True},
+        headers=admin_headers,
+    )
+    assert blocked.status_code == 400
+    assert "approved" in blocked.json()["detail"]
+
+    queued = client.post(
+        f"/api/v1/drafts/{drafts[0]['id']}/approve-and-send",
+        json={"sandbox": True},
+        headers=admin_headers,
+    )
+    assert queued.status_code == 200, queued.text
+    assert queued.json()["status"] == "sandbox_queued"
+
+
+def test_research_run_skips_drafts_for_invalid_contacts(client, admin_headers, monkeypatch):
+    async def fake_text_search(settings, *, query, location=None, limit=10):
+        return [
+            {
+                "id": "places/invalid-contact",
+                "displayName": {"text": "Invalid Contact Clinic"},
+                "formattedAddress": "Colombo, Sri Lanka",
+                "websiteUri": "https://invalidclinic.lk",
+                "businessStatus": "OPERATIONAL",
+                "types": ["dental_clinic"],
+            }
+        ]
+
+    async def fake_enrich(db, *, company):
+        company.domain = "invalidclinic.lk"
+        company.digital_footprint = {
+            **(company.digital_footprint or {}),
+            "weak_mobile_ux": True,
+            "missing_booking_flow": True,
+            "missing_contact_flow": True,
+            "portal_or_data_fit": True,
+        }
+        db.add(
+            Contact(
+                company=company,
+                email="info@invalidclinic.lk",
+                email_type="generic",
+                email_status="invalid",
+                source="company_website",
+                source_url="https://invalidclinic.lk/contact",
+                processing_basis="public business contact on company website",
+            )
+        )
+
+        class Run:
+            status = "completed"
+
+        return Run()
+
+    monkeypatch.setattr("app.services.research.text_search", fake_text_search)
+    monkeypatch.setattr("app.services.research.enrich_company_website", fake_enrich)
+
+    response = client.post(
+        "/api/v1/research/runs",
+        json={
+            "profile_key": "clinics",
+            "location": "Sri Lanka",
+            "score_threshold": 50,
+            "max_companies": 1,
+            "max_drafts": 1,
+            "create_drafts": True,
+        },
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200, response.text
+    assert response.json()["drafts_created"] == 0
+    drafts = client.get("/api/v1/drafts", headers=admin_headers).json()
+    assert drafts == []
+
 
 def test_cron_research_requires_secret(client):
     missing = client.get("/api/v1/cron/research")
     assert missing.status_code == 401
+
+
+def test_research_run_fails_loudly_without_google_places_key(client, admin_headers):
+    response = client.post(
+        "/api/v1/research/runs",
+        json={
+            "profile_key": "clinics",
+            "location": "Sri Lanka",
+            "max_companies": 1,
+            "max_drafts": 1,
+            "create_drafts": True,
+        },
+        headers=admin_headers,
+    )
+
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["status"] == "failed"
+    assert "GOOGLE_PLACES_API_KEY" in data["error"]
+    assert data["drafts_created"] == 0
 
 
 def test_vercel_requires_postgres_database_url(monkeypatch):

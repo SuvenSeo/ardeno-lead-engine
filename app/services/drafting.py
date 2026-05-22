@@ -13,6 +13,9 @@ from app.services.ai_drafting import OpenAIDraftNotConfigured, build_prompt_inpu
 from app.services.compliance import make_compliance_footer
 from app.services.scoring import detect_playbook
 
+DRAFTABLE_STATUSES = {"verified", "deliverable", "unknown"}
+VERIFIED_STATUSES = {"verified", "deliverable"}
+
 
 def word_count(text: str) -> int:
     return len(re.findall(r"\b[\w']+\b", text))
@@ -30,14 +33,31 @@ def latest_score(db: Session, company_id: str) -> LeadScore | None:
 def select_contact(company: Company, contact_id: str | None = None) -> Contact | None:
     contacts = list(company.contacts)
     if contact_id:
-        return next((contact for contact in contacts if contact.id == contact_id), None)
-    generic = [contact for contact in contacts if contact.email_type == "generic"]
-    verified = [contact for contact in generic if contact.email_status in {"verified", "deliverable"}]
+        contact = next((item for item in contacts if item.id == contact_id), None)
+        if contact and is_draftable_contact(contact):
+            return contact
+        return None
+    draftable = [contact for contact in contacts if is_draftable_contact(contact)]
+    generic = [contact for contact in draftable if contact.email_type == "generic"]
+    verified = [contact for contact in generic if contact.email_status in VERIFIED_STATUSES]
     if verified:
         return verified[0]
     if generic:
         return generic[0]
-    return contacts[0] if contacts else None
+    verified_role = [
+        contact
+        for contact in draftable
+        if contact.email_status in VERIFIED_STATUSES and contact.processing_basis
+    ]
+    return verified_role[0] if verified_role else None
+
+
+def is_draftable_contact(contact: Contact) -> bool:
+    if contact.email_status not in DRAFTABLE_STATUSES:
+        return False
+    if contact.email_type == "generic":
+        return True
+    return contact.email_status in VERIFIED_STATUSES and bool(contact.processing_basis)
 
 
 def concrete_reason_for(company: Company, score: LeadScore | None) -> str:
