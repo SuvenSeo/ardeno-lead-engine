@@ -18,7 +18,9 @@ def upsert_company_from_input(db: Session, *, payload: CompanyInput, source_key:
     website_url = _normalized_url(payload.website_url)
     domain = payload.domain or domain_from_url(website_url)
     existing = None
-    if website_url:
+    if payload.place_id:
+        existing = db.scalar(select(Company).where(Company.place_id == payload.place_id).limit(1))
+    if not existing and website_url:
         existing = db.scalar(select(Company).where(Company.website_url == website_url).limit(1))
     if not existing and domain:
         existing = db.scalar(select(Company).where(Company.domain == domain).limit(1))
@@ -33,6 +35,7 @@ def upsert_company_from_input(db: Session, *, payload: CompanyInput, source_key:
     company = existing or Company(name=payload.name)
     company.name = payload.name
     company.domain = domain
+    company.place_id = payload.place_id
     company.website_url = website_url
     company.country = payload.country
     company.region = payload.region
@@ -69,6 +72,7 @@ def upsert_company_from_input(db: Session, *, payload: CompanyInput, source_key:
         contact.email_status = contact_payload.email_status
         contact.source = contact_payload.source
         contact.source_url = contact_payload.source_url or payload.source_url or website_url
+        contact.provider_contact_id = contact_payload.provider_contact_id
         contact.processing_basis = contact_payload.processing_basis
         contact.consent_notes = contact_payload.consent_notes
 

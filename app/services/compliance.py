@@ -134,6 +134,8 @@ def assert_sender_ready(settings: Settings, *, sandbox: bool) -> None:
         raise ComplianceError("Sender DNS/auth is not verified. Set SENDER_DNS_AUTH_VERIFIED=true only after SPF, DKIM, DMARC, reply mailbox, and monitoring are confirmed.")
     if settings.sending_provider == "resend" and not settings.resend_api_key:
         raise ComplianceError("RESEND_API_KEY is required for Resend sending.")
+    if settings.sending_provider == "smartlead" and (not settings.smartlead_api_key or not settings.smartlead_campaign_id):
+        raise ComplianceError("SMARTLEAD_API_KEY and SMARTLEAD_CAMPAIGN_ID are required for Smartlead sending.")
 
 
 def assert_daily_cap(db: Session, *, sender: str, cap: int) -> None:
@@ -142,7 +144,7 @@ def assert_daily_cap(db: Session, *, sender: str, cap: int) -> None:
         select(func.count(Message.id)).where(
             Message.from_email == sender,
             Message.sent_at >= today,
-            Message.status.in_(["sandbox_queued", "sent", "provider_queued"]),
+            Message.status.in_(["sandbox_queued", "sent", "provider_queued", "queued_in_smartlead"]),
         )
     )
     if count is not None and count >= cap:

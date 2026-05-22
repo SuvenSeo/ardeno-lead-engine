@@ -63,6 +63,22 @@ DEFAULT_SOURCES = [
         "terms_url": "https://docs.clearout.io/email-verifier-api.html",
         "allowed_use_notes": "Use for email verification before production sending.",
     },
+    {
+        "key": "openai",
+        "name": "OpenAI structured draft generation",
+        "kind": "api",
+        "trust_score": 0.68,
+        "terms_url": "https://platform.openai.com/docs/guides/structured-outputs",
+        "allowed_use_notes": "Use only sourced facts and schema-constrained draft outputs.",
+    },
+    {
+        "key": "smartlead",
+        "name": "Smartlead approved outreach queue",
+        "kind": "api",
+        "trust_score": 0.72,
+        "terms_url": "https://api.smartlead.ai/",
+        "allowed_use_notes": "Queue only human-approved drafts and sync suppressions/webhooks.",
+    },
 ]
 
 

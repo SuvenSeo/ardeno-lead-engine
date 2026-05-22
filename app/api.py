@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
-from app.db import get_db
+from app.db import get_db, is_database_operational
 from app.models import (
     Company,
     Contact,
@@ -13,6 +13,7 @@ from app.models import (
     EmailDraft,
     LeadScore,
     Message,
+    ResearchRun,
     SendApproval,
     SuppressionEntry,
     now_utc,
@@ -25,14 +26,18 @@ from app.schemas import (
     DraftCreate,
     LeadSummary,
     MessageResponse,
+    ResearchRunCreate,
+    ResearchRunResponse,
     SendCreate,
+    SmartleadWebhook,
     SuppressionCreate,
 )
 from app.security import require_admin
 from app.services.audit import audit_event
 from app.services.compliance import ComplianceError, add_suppression, normalize_email
-from app.services.drafting import generate_draft
+from app.services.drafting import generate_ai_or_template_draft
 from app.services.email_sender import send_draft
+from app.services.research import list_profiles, run_research
 from app.services.scoring import score_company
 from app.services.seed import seed_defaults
 from app.services.sources.google_places import GooglePlacesNotConfigured, text_search
@@ -81,6 +86,38 @@ def lead_summary(db: Session, company: Company) -> LeadSummary:
         score_reasons=score.reasons if score else [],
         contact_count=len(company.contacts),
         latest_draft_status=latest_draft.status if latest_draft else None,
+        source_reason=latest_draft.source_reason if latest_draft else None,
+        contact_quality=best_contact_quality(company),
+        research_profile=company.research_profile,
+    )
+
+
+def best_contact_quality(company: Company) -> str | None:
+    if not company.contacts:
+        return None
+    statuses = {contact.email_status for contact in company.contacts}
+    if "deliverable" in statuses or "verified" in statuses:
+        return "verified"
+    if "risky" in statuses:
+        return "risky"
+    if "invalid" in statuses and len(statuses) == 1:
+        return "invalid"
+    return "unknown"
+
+
+def serialize_research_run(run: ResearchRun) -> ResearchRunResponse:
+    return ResearchRunResponse(
+        id=run.id,
+        profile_key=run.profile_key,
+        location=run.location,
+        status=run.status,
+        companies_seen=run.companies_seen,
+        companies_created=run.companies_created,
+        companies_enriched=run.companies_enriched,
+        drafts_created=run.drafts_created,
+        score_threshold=run.score_threshold,
+        source_summary=run.source_summary or {},
+        error=run.error,
     )
 
 
@@ -94,6 +131,7 @@ async def companies_from_google(settings: Settings, payload: DiscoveryRunCreate)
         companies.append(
             CompanyInput(
                 name=display_name,
+                place_id=place.get("id"),
                 website_url=place.get("websiteUri"),
                 country="Sri Lanka" if payload.location and "sri" in payload.location.lower() else None,
                 industry=", ".join(place.get("types") or [])[:160] or None,
@@ -102,6 +140,9 @@ async def companies_from_google(settings: Settings, payload: DiscoveryRunCreate)
                 digital_footprint={
                     "formatted_address": place.get("formattedAddress"),
                     "business_status": place.get("businessStatus"),
+                    "google_rating": place.get("rating"),
+                    "google_user_rating_count": place.get("userRatingCount"),
+                    "google_field_mask": "places.id,places.displayName,places.formattedAddress,places.websiteUri,places.businessStatus,places.types,places.nationalPhoneNumber,places.rating,places.userRatingCount",
                 },
             )
         )
@@ -110,7 +151,75 @@ async def companies_from_google(settings: Settings, payload: DiscoveryRunCreate)
 
 @router.get("/health")
 def health() -> dict:
-    return {"status": "ok", "service": "ardeno-leads"}
+    return {"status": "ok", "service": "ardeno-leads", "database_operational": is_database_operational()}
+
+
+@router.get("/api/v1/research/profiles")
+def research_profiles(_actor: str = Depends(require_admin)) -> list[dict]:
+    return list_profiles()
+
+
+@router.post("/api/v1/research/runs", response_model=ResearchRunResponse)
+async def create_research_run(
+    payload: ResearchRunCreate,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    actor: str = Depends(require_admin),
+) -> ResearchRunResponse:
+    seed_defaults(db)
+    run = await run_research(db, settings, payload, actor=actor)
+    audit_event(db, actor=actor, action="research.completed", entity_type="research_run", entity_id=run.id, metadata={"status": run.status, "profile_key": payload.profile_key})
+    db.commit()
+    db.refresh(run)
+    return serialize_research_run(run)
+
+
+@router.get("/api/v1/cron/research", response_model=ResearchRunResponse)
+async def cron_research(
+    token: str | None = None,
+    authorization: str | None = Header(default=None, alias="Authorization"),
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+) -> ResearchRunResponse:
+    supplied = token or (authorization.removeprefix("Bearer ").strip() if authorization else None)
+    if not settings.cron_secret or supplied != settings.cron_secret:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid cron token")
+    seed_defaults(db)
+    payload = ResearchRunCreate(profile_key="clinics", location="Sri Lanka", create_drafts=True)
+    run = await run_research(db, settings, payload, actor="vercel_cron")
+    audit_event(db, actor="vercel_cron", action="research.cron_completed", entity_type="research_run", entity_id=run.id, metadata={"status": run.status})
+    db.commit()
+    db.refresh(run)
+    return serialize_research_run(run)
+
+
+@router.get("/api/v1/research/runs", response_model=list[ResearchRunResponse])
+def list_research_runs(
+    db: Session = Depends(get_db),
+    _actor: str = Depends(require_admin),
+) -> list[ResearchRunResponse]:
+    runs = db.scalars(select(ResearchRun).order_by(ResearchRun.started_at.desc()).limit(50)).all()
+    return [serialize_research_run(run) for run in runs]
+
+
+@router.get("/api/v1/recommendations", response_model=list[LeadSummary])
+def recommendations(
+    db: Session = Depends(get_db),
+    _actor: str = Depends(require_admin),
+) -> list[LeadSummary]:
+    latest_scores = db.scalars(select(LeadScore).order_by(LeadScore.total_score.desc(), LeadScore.created_at.desc()).limit(100)).all()
+    seen: set[str] = set()
+    companies: list[Company] = []
+    for score in latest_scores:
+        if score.company_id in seen:
+            continue
+        company = db.get(Company, score.company_id)
+        if company:
+            companies.append(company)
+            seen.add(company.id)
+        if len(companies) >= 50:
+            break
+    return [lead_summary(db, company) for company in companies]
 
 
 @router.post("/api/v1/discovery/runs")
@@ -227,7 +336,7 @@ async def enrich_lead(
 
 
 @router.post("/api/v1/leads/{company_id}/drafts")
-def create_draft(
+async def create_draft(
     company_id: str,
     payload: DraftCreate,
     db: Session = Depends(get_db),
@@ -236,13 +345,44 @@ def create_draft(
 ) -> dict:
     company = require_company(db, company_id)
     try:
-        draft = generate_draft(db, company=company, settings=settings, campaign_id=payload.campaign_id, contact_id=payload.contact_id)
+        draft = await generate_ai_or_template_draft(db, company=company, settings=settings, campaign_id=payload.campaign_id, contact_id=payload.contact_id, use_ai=payload.use_ai)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     audit_event(db, actor=actor, action="draft.created", entity_type="email_draft", entity_id=draft.id, metadata={"company_id": company.id})
     db.commit()
     db.refresh(draft)
     return serialize_draft(draft)
+
+
+@router.post("/api/v1/drafts/{draft_id}/approve-and-send", response_model=MessageResponse)
+async def approve_and_send_draft(
+    draft_id: str,
+    payload: SendCreate,
+    db: Session = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+    actor: str = Depends(require_admin),
+) -> MessageResponse:
+    draft = require_draft(db, draft_id)
+    if draft.status not in {"draft", "approved"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Draft status is not sendable: {draft.status}")
+    if draft.status == "draft":
+        approval = SendApproval(
+            draft=draft,
+            approver_email="ops@ardeno.studio",
+            decision="approved",
+            notes="Approved through one-click approve-and-send",
+        )
+        db.add(approval)
+        draft.status = "approved"
+        db.flush()
+    try:
+        message = await send_draft(db, draft=draft, settings=settings, sandbox=payload.sandbox)
+    except ComplianceError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    audit_event(db, actor=actor, action="draft.approve_and_send", entity_type="message", entity_id=message.id, metadata={"sandbox": payload.sandbox, "provider": message.provider})
+    db.commit()
+    db.refresh(message)
+    return MessageResponse(id=message.id, status=message.status, provider=message.provider, to_email=message.to_email, from_email=message.from_email)
 
 
 @router.get("/api/v1/drafts")
@@ -327,8 +467,13 @@ def metrics(
         "drafts": draft_statuses,
         "messages": message_statuses,
         "approved_drafts": draft_statuses.get("approved", 0),
-        "sent_or_queued": sum(message_statuses.get(key, 0) for key in ["sandbox_queued", "sent", "provider_queued"]),
+        "sent_or_queued": sum(message_statuses.get(key, 0) for key in ["sandbox_queued", "sent", "provider_queued", "queued_in_smartlead"]),
         "bounces": sum(message_statuses.get(key, 0) for key in ["bounced", "complained"]),
+        "provider_sync": {
+            "smartlead_configured": bool(get_settings().smartlead_api_key and get_settings().smartlead_campaign_id),
+            "google_places_configured": bool(get_settings().google_places_api_key),
+            "openai_configured": bool(get_settings().openai_api_key),
+        },
     }
 
 
@@ -370,6 +515,45 @@ def bounce_webhook(
     return {"status": "recorded", "suppression_id": entry.id}
 
 
+@router.post("/api/v1/webhooks/smartlead")
+def smartlead_webhook(
+    payload: SmartleadWebhook,
+    db: Session = Depends(get_db),
+    actor: str = Depends(require_admin),
+) -> dict:
+    message = None
+    if payload.message_id:
+        message = db.get(Message, payload.message_id)
+    if not message and payload.provider_message_id:
+        message = db.scalar(select(Message).where(Message.provider_message_id == payload.provider_message_id).limit(1))
+    if not message and payload.lead_id:
+        message = db.scalar(select(Message).where(Message.provider_lead_id == payload.lead_id).order_by(Message.sent_at.desc()).limit(1))
+
+    event = payload.event.lower()
+    if message:
+        if event in {"sent", "email_sent"}:
+            message.status = "sent"
+        elif event in {"reply", "replied"}:
+            message.status = "replied"
+        elif event in {"bounce", "bounced"}:
+            message.status = "bounced"
+        elif event in {"unsubscribe", "unsubscribed"}:
+            message.status = "unsubscribed"
+        else:
+            message.status = f"smartlead_{event}"[:80]
+        message.last_event_at = now_utc()
+        message.provider_payload = {**(message.provider_payload or {}), "last_event": event}
+
+    suppression_id = None
+    if event in {"bounce", "bounced", "unsubscribe", "unsubscribed"} and payload.email:
+        entry = add_suppression(db, value=str(payload.email), value_type="email", reason=event, source="smartlead_webhook")
+        suppression_id = entry.id
+
+    audit_event(db, actor=actor, action=f"smartlead.{event}", entity_type="message", entity_id=message.id if message else None, metadata={"lead_id": payload.lead_id, "email": str(payload.email) if payload.email else None})
+    db.commit()
+    return {"status": "recorded", "message_id": message.id if message else None, "suppression_id": suppression_id}
+
+
 def serialize_draft(draft: EmailDraft) -> dict:
     return {
         "id": draft.id,
@@ -381,6 +565,9 @@ def serialize_draft(draft: EmailDraft) -> dict:
         "word_count": draft.word_count,
         "concrete_reason": draft.concrete_reason,
         "proof_angle": draft.proof_angle,
+        "source_reason": draft.source_reason,
+        "risk_flags": draft.risk_flags or [],
+        "ai_metadata": draft.ai_metadata or {},
         "compliance_footer": draft.compliance_footer,
         "status": draft.status,
     }

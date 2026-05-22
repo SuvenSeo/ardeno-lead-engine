@@ -43,6 +43,34 @@ Content-Type: application/json
 
 ## Human Approval Flow
 
+1. `POST /api/v1/research/runs`
+2. `GET /api/v1/recommendations`
+3. `POST /api/v1/leads/{company_id}/drafts`
+4. `POST /api/v1/drafts/{draft_id}/approval`
+5. `POST /api/v1/drafts/{draft_id}/approve-and-send`
+
+## Autonomous Research
+
+```json
+{
+  "profile_key": "clinics",
+  "location": "Sri Lanka",
+  "score_threshold": 72,
+  "max_companies": 20,
+  "max_drafts": 8,
+  "create_drafts": true
+}
+```
+
+Cron endpoint:
+
+```http
+GET /api/v1/cron/research
+Authorization: Bearer <CRON_SECRET>
+```
+
+## Manual Approval Flow
+
 1. `GET /api/v1/leads`
 2. `POST /api/v1/leads/{company_id}/drafts`
 3. `POST /api/v1/drafts/{draft_id}/approval`
@@ -60,7 +88,18 @@ Production send payload:
 { "sandbox": false }
 ```
 
-Production send fails unless provider, sender authentication, footer, suppression, approval, and daily cap checks pass.
+Production send fails unless provider, sender authentication, footer, suppression, approval, and daily cap checks pass. For `SENDING_PROVIDER=smartlead`, the send request queues a lead into the configured Smartlead campaign and waits for Smartlead campaign scheduling.
+
+## Smartlead Webhook
+
+```json
+{
+  "event": "sent",
+  "email": "lead@example.com",
+  "lead_id": "smartlead-lead-id",
+  "campaign_id": "smartlead-campaign-id"
+}
+```
 
 ## Suppression
 

@@ -12,6 +12,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{TEST_DB.as_posix()}"
 os.environ["ADMIN_API_KEY"] = "test-admin-key"
 os.environ["SENDING_PROVIDER"] = "sandbox"
 os.environ["SENDER_DNS_AUTH_VERIFIED"] = "false"
+os.environ["CRON_SECRET"] = "test-cron-secret"
 
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402

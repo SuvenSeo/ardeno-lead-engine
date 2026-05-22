@@ -13,6 +13,7 @@ class ContactInput(BaseModel):
     email_status: str = "unknown"
     source: str = "manual"
     source_url: str | None = None
+    provider_contact_id: str | None = None
     processing_basis: str = "public business contact"
     consent_notes: str | None = None
 
@@ -20,6 +21,7 @@ class ContactInput(BaseModel):
 class CompanyInput(BaseModel):
     name: str = Field(min_length=1, max_length=240)
     domain: str | None = None
+    place_id: str | None = None
     website_url: HttpUrl | str | None = None
     country: str | None = "Sri Lanka"
     region: str | None = None
@@ -41,6 +43,7 @@ class DiscoveryRunCreate(BaseModel):
 class DraftCreate(BaseModel):
     campaign_id: str | None = None
     contact_id: str | None = None
+    use_ai: bool = True
 
 
 class ApprovalCreate(BaseModel):
@@ -68,6 +71,27 @@ class BounceWebhook(BaseModel):
     reason: str | None = None
 
 
+class ResearchRunCreate(BaseModel):
+    profile_key: str = "clinics"
+    location: str = "Sri Lanka"
+    score_threshold: float | None = None
+    max_companies: int | None = Field(default=None, ge=1, le=100)
+    max_drafts: int | None = Field(default=None, ge=0, le=50)
+    create_drafts: bool = True
+
+
+class SmartleadWebhook(BaseModel):
+    event: str
+    email: EmailStr | None = None
+    lead_id: str | None = None
+    campaign_id: str | None = None
+    message_id: str | None = None
+    provider_message_id: str | None = None
+    reply_text: str | None = None
+    reason: str | None = None
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
 class LeadSummary(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -82,6 +106,23 @@ class LeadSummary(BaseModel):
     score_reasons: list[str] = Field(default_factory=list)
     contact_count: int = 0
     latest_draft_status: str | None = None
+    source_reason: str | None = None
+    contact_quality: str | None = None
+    research_profile: str | None = None
+
+
+class ResearchRunResponse(BaseModel):
+    id: str
+    profile_key: str
+    location: str
+    status: str
+    companies_seen: int
+    companies_created: int
+    companies_enriched: int
+    drafts_created: int
+    score_threshold: float
+    source_summary: dict[str, Any]
+    error: str | None = None
 
 
 class MessageResponse(BaseModel):

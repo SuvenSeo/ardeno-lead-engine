@@ -4,434 +4,362 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Ardeno Lead Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..144,75..100,300..800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      color-scheme: light;
-      --ink: #172026;
-      --muted: #5e6972;
-      --line: #d8dee4;
-      --panel: #f6f8fa;
-      --white: #ffffff;
-      --blue: #1f5eff;
-      --green: #147d64;
-      --red: #b42318;
-      --amber: #8a6116;
-      --shadow: 0 10px 30px rgba(23, 32, 38, 0.08);
+      color-scheme: dark;
+      --bg: #050505;
+      --panel: #0b0b0d;
+      --panel-2: #111114;
+      --line: rgba(255, 255, 255, 0.1);
+      --line-strong: rgba(255, 255, 255, 0.18);
+      --ink: #f8f8f8;
+      --muted: #a1a1aa;
+      --faint: #71717a;
+      --red: #e50914;
+      --red-2: #ff2a35;
+      --green: #22c55e;
+      --amber: #f5c542;
+      --danger: #ff4d55;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
     }
 
     * { box-sizing: border-box; }
 
     html, body {
+      margin: 0;
+      min-height: 100%;
       max-width: 100%;
       overflow-x: hidden;
-    }
-
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
       color: var(--ink);
-      background: #eef2f5;
+      font-family: Manrope, system-ui, sans-serif;
       letter-spacing: 0;
     }
 
-    header {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 16px;
-      align-items: center;
-      padding: 18px 28px;
-      border-bottom: 1px solid var(--line);
-      background: var(--white);
-      position: sticky;
-      top: 0;
-      z-index: 5;
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.055;
+      z-index: 50;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 220 220' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.75'/%3E%3C/svg%3E");
     }
 
-    h1 {
-      font-size: 20px;
-      line-height: 1.2;
-      margin: 0;
-      font-weight: 700;
+    body::after {
+      content: "";
+      position: fixed;
+      inset: -20%;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 16% 12%, rgba(229, 9, 20, 0.18), transparent 24%),
+        radial-gradient(circle at 85% 18%, rgba(255, 255, 255, 0.08), transparent 22%),
+        linear-gradient(130deg, rgba(229, 9, 20, 0.08), transparent 38%);
+      filter: blur(18px);
+      z-index: 0;
     }
 
-    main {
-      display: grid;
-      grid-template-columns: minmax(320px, 430px) 1fr;
-      gap: 18px;
-      padding: 18px;
-      max-width: 1500px;
-      margin: 0 auto;
-    }
-
-    section, aside {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      min-width: 0;
-    }
-
-    .band {
-      padding: 16px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .band:last-child { border-bottom: 0; }
-
-    h2 {
-      font-size: 14px;
-      margin: 0 0 12px;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 700;
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-
-    input, textarea, select {
-      width: 100%;
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #fbfcfd;
-      color: var(--ink);
+    button, input, select, textarea {
       font: inherit;
-      font-size: 13px;
-      padding: 10px 11px;
-      outline: none;
-    }
-
-    textarea {
-      min-height: 310px;
-      resize: vertical;
-      font-family: "Cascadia Code", Consolas, monospace;
-      line-height: 1.45;
-    }
-
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(31, 94, 255, 0.12);
-    }
-
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
+      color: inherit;
     }
 
     button {
-      border: 1px solid var(--line);
-      border-radius: 6px;
-      background: #f7f9fb;
+      min-height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.05);
       color: var(--ink);
-      min-height: 36px;
-      padding: 8px 11px;
-      font: inherit;
+      padding: 8px 12px;
       font-size: 13px;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       white-space: nowrap;
+      transition: 160ms ease;
     }
 
-    button.primary {
-      background: var(--blue);
-      border-color: var(--blue);
-      color: var(--white);
-    }
+    button:hover { border-color: rgba(255, 255, 255, 0.32); transform: translateY(-1px); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+    button.primary { background: var(--red); border-color: var(--red); box-shadow: 0 0 28px rgba(229, 9, 20, 0.22); }
+    button.good { background: #0f7a40; border-color: #159e56; }
+    button.warn { color: var(--amber); border-color: rgba(245, 197, 66, 0.45); background: rgba(245, 197, 66, 0.08); }
+    button.danger { color: #fff; border-color: rgba(255, 77, 85, 0.5); background: rgba(255, 77, 85, 0.16); }
 
-    button.good {
-      background: var(--green);
-      border-color: var(--green);
-      color: var(--white);
-    }
-
-    button.warn {
-      background: #fff6df;
-      border-color: #f0d088;
-      color: var(--amber);
-    }
-
-    button.danger {
-      background: #fff1f0;
-      border-color: #f4b6b1;
-      color: var(--red);
-    }
-
-    button:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .status {
-      min-height: 24px;
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.045);
+      padding: 10px 11px;
+      outline: none;
       font-size: 13px;
-      color: var(--muted);
     }
 
-    .status.error { color: var(--red); }
-    .status.ok { color: var(--green); }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(229, 9, 20, 0.72);
+      box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.12);
+    }
 
-    .metrics {
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
       display: grid;
-      grid-template-columns: repeat(6, minmax(96px, 1fr));
-      gap: 10px;
-      padding: 16px;
-      background: var(--panel);
+      grid-template-columns: 1fr minmax(280px, 520px);
+      gap: 18px;
+      align-items: center;
+      padding: 18px 24px;
       border-bottom: 1px solid var(--line);
+      background: rgba(5, 5, 5, 0.82);
+      backdrop-filter: blur(18px);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Bricolage Grotesque", Manrope, sans-serif;
+      font-variation-settings: "wdth" 82, "wght" 720;
+    }
+
+    h1 { font-size: 28px; line-height: 1; }
+    h2 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+    h3 { font-size: 18px; line-height: 1.2; }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
       min-width: 0;
     }
 
-    .metric {
-      background: var(--white);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 10px;
-      min-height: 66px;
-    }
-
-    .metric strong {
-      display: block;
-      font-size: 22px;
-      line-height: 1;
-      margin-bottom: 8px;
-    }
-
-    .metric span {
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    table {
-      width: 100%;
-      min-width: 760px;
-      border-collapse: collapse;
-      table-layout: fixed;
-      font-size: 13px;
-    }
-
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid var(--line);
-      text-align: left;
-      vertical-align: top;
-      overflow-wrap: anywhere;
-    }
-
-    th {
-      font-size: 12px;
-      color: var(--muted);
-      background: #fbfcfd;
-      position: sticky;
-      top: 0;
-      z-index: 4;
-      white-space: nowrap;
-    }
-
-    tbody tr { cursor: pointer; }
-    tbody tr:hover { background: #f3f7ff; }
-    tbody tr.active { background: #e8efff; }
-
-    .score {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 46px;
-      height: 28px;
-      border-radius: 999px;
-      background: #e7f5ef;
-      color: var(--green);
+    .mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, var(--red), #750007);
+      box-shadow: 0 0 36px rgba(229, 9, 20, 0.34);
+      font-family: "Bricolage Grotesque", sans-serif;
       font-weight: 800;
     }
 
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #eef2f5;
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-      margin: 0 4px 4px 0;
-    }
+    .subtitle { color: var(--muted); font-size: 13px; margin-top: 6px; }
+    .shell { position: relative; z-index: 1; max-width: 1680px; margin: 0 auto; padding: 18px; }
 
-    .workspace {
+    .grid {
       display: grid;
-      grid-template-rows: auto minmax(360px, 1fr);
-      min-width: 0;
+      grid-template-columns: 390px minmax(0, 1fr) 430px;
+      gap: 16px;
+      align-items: start;
     }
 
-    .workspace > div {
-      min-width: 0;
-    }
-
-    .table-wrap {
-      overflow: auto;
-      max-height: 54vh;
-      max-width: 100%;
-      min-width: 0;
-      width: 100%;
-    }
-
-    .detail {
-      display: grid;
-      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
-      gap: 14px;
-      padding: 16px;
-      background: var(--white);
-    }
-
-    .pane {
+    .panel {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.035));
       border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
       min-width: 0;
+      overflow: hidden;
     }
 
-    .pane-head {
+    .panel-head {
       display: flex;
       justify-content: space-between;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
-      padding: 12px;
+      padding: 14px;
       border-bottom: 1px solid var(--line);
-      background: #fbfcfd;
+      background: rgba(255, 255, 255, 0.025);
     }
 
-    .pane-body {
-      padding: 12px;
+    .panel-body { padding: 14px; }
+    .stack { display: grid; gap: 14px; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(108px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
     }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      padding: 12px;
+      min-height: 76px;
+    }
+
+    .metric strong { display: block; font-size: 27px; line-height: 1; font-weight: 900; }
+    .metric span { display: block; color: var(--muted); font-size: 12px; font-weight: 800; margin-top: 9px; }
+
+    .status {
+      min-height: 22px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status.ok { color: var(--green); }
+    .status.error { color: var(--danger); }
+
+    .lead-list {
+      display: grid;
+      gap: 8px;
+      max-height: 62vh;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .lead-card {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.045);
+      padding: 12px;
+      cursor: pointer;
+    }
+
+    .lead-card:hover, .lead-card.active { border-color: rgba(229, 9, 20, 0.55); background: rgba(229, 9, 20, 0.08); }
+    .lead-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .lead-name { font-weight: 900; font-size: 15px; }
+    .lead-url { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; margin-top: 3px; }
+    .score { min-width: 54px; text-align: center; color: white; background: var(--red); border-radius: 999px; padding: 5px 8px; font-weight: 900; }
+    .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .tag { border-radius: 999px; padding: 4px 7px; font-size: 11px; color: var(--muted); background: rgba(255,255,255,.07); border: 1px solid var(--line); }
+    .tag.good { color: #9af0bd; background: rgba(34,197,94,.1); }
+    .tag.warn { color: #ffd66d; background: rgba(245,197,66,.1); }
 
     pre {
       margin: 0;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      color: #d4d4d8;
       font-family: "Cascadia Code", Consolas, monospace;
       font-size: 12px;
-      line-height: 1.5;
-      color: #25313a;
+      line-height: 1.55;
     }
 
-    .muted { color: var(--muted); }
-    .gap { margin-top: 10px; }
+    .draft-box {
+      min-height: 260px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+      background: rgba(0,0,0,.24);
+    }
 
-    @media (max-width: 980px) {
-      header, main, .detail, .split {
-        grid-template-columns: 1fr;
-      }
+    .checklist { display: grid; gap: 7px; margin-top: 10px; }
+    .check { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px rgba(34,197,94,.4); flex: 0 0 auto; }
+    .danger-dot { background: var(--danger); box-shadow: 0 0 12px rgba(255,77,85,.4); }
 
+    @media (max-width: 1260px) {
+      .grid { grid-template-columns: 360px minmax(0, 1fr); }
+      .right-col { grid-column: 1 / -1; }
+    }
+
+    @media (max-width: 860px) {
+      header, .grid, .two { grid-template-columns: 1fr; }
       header { position: static; }
-      th { position: static; }
-      .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-      .table-wrap { max-height: none; }
-      .workspace { overflow: hidden; }
+      .shell { padding: 12px; }
+      .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .lead-list { max-height: none; }
     }
   </style>
 </head>
 <body>
   <header>
-    <h1>Ardeno Lead Engine</h1>
+    <div class="brand">
+      <div class="mark">A</div>
+      <div>
+        <h1>Ardeno Lead Engine</h1>
+        <div class="subtitle">Research queue / draft approval / outbound control</div>
+      </div>
+    </div>
     <div class="row">
       <input id="apiKey" type="password" placeholder="X-Admin-Key" autocomplete="off">
-      <button id="saveKey">Save key</button>
+      <button id="saveKey">Save</button>
       <button id="refresh" class="primary">Refresh</button>
     </div>
   </header>
 
-  <main>
-    <aside>
-      <div class="band">
-        <h2>Discovery</h2>
-        <textarea id="discoveryPayload" spellcheck="false"></textarea>
-        <div class="row gap">
-          <button id="sample">Sample</button>
-          <button id="runDiscovery" class="primary">Run discovery</button>
+  <main class="shell">
+    <div id="metrics" class="metrics"></div>
+    <div class="grid">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Research Control</h2>
+          <button id="runResearch" class="primary">Run research</button>
         </div>
-      </div>
-      <div class="band">
-        <h2>Suppression</h2>
-        <div class="split">
-          <select id="suppressionType">
-            <option value="email">Email</option>
-            <option value="domain">Domain</option>
-            <option value="company">Company</option>
-          </select>
-          <input id="suppressionValue" placeholder="value">
+        <div class="panel-body stack">
+          <div class="two">
+            <select id="profile"></select>
+            <input id="location" value="Sri Lanka">
+          </div>
+          <div class="two">
+            <input id="threshold" type="number" min="1" max="100" value="72">
+            <input id="maxCompanies" type="number" min="1" max="100" value="20">
+          </div>
+          <div class="two">
+            <input id="maxDrafts" type="number" min="0" max="50" value="8">
+            <select id="sendMode">
+              <option value="sandbox">Sandbox</option>
+              <option value="provider">Smartlead</option>
+            </select>
+          </div>
+          <div id="providerHealth" class="status"></div>
+          <div id="runHistory" class="stack"></div>
         </div>
-        <input id="suppressionReason" class="gap" placeholder="reason" value="manual opt-out">
-        <button id="addSuppression" class="danger gap">Add suppression</button>
-      </div>
-      <div class="band">
-        <div id="status" class="status">Ready.</div>
-      </div>
-    </aside>
+      </aside>
 
-    <section class="workspace">
-      <div>
-        <div id="metrics" class="metrics"></div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 30%;">Company</th>
-                <th style="width: 12%;">Score</th>
-                <th style="width: 18%;">Industry</th>
-                <th style="width: 14%;">City</th>
-                <th style="width: 12%;">Contacts</th>
-                <th style="width: 14%;">Draft</th>
-              </tr>
-            </thead>
-            <tbody id="leads"></tbody>
-          </table>
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Best Leads Queue</h2>
+          <div class="row">
+            <button id="loadRecommendations">Ranked</button>
+            <button id="loadLeads">All</button>
+          </div>
         </div>
-      </div>
+        <div class="panel-body">
+          <div id="leads" class="lead-list"></div>
+        </div>
+      </section>
 
-      <div class="detail">
-        <div class="pane">
-          <div class="pane-head">
-            <strong id="leadTitle">No lead selected</strong>
-            <div class="row">
-              <button id="enrichLead">Enrich</button>
-              <button id="draftLead" class="primary">Draft</button>
-            </div>
-          </div>
-          <div class="pane-body">
-            <div id="leadMeta" class="muted">Select a lead from the table.</div>
-            <div id="leadReasons" class="gap"></div>
-            <pre id="leadJson" class="gap"></pre>
+      <section class="right-col panel">
+        <div class="panel-head">
+          <h2>Draft Approval</h2>
+          <div class="row">
+            <button id="draftLead">Draft</button>
+            <button id="approveDraft" class="good">Approve</button>
+            <button id="approveSend" class="primary">Approve & send</button>
           </div>
         </div>
-
-        <div class="pane">
-          <div class="pane-head">
-            <strong>Draft approval</strong>
-            <div class="row">
-              <button id="approveDraft" class="good">Approve</button>
-              <button id="rejectDraft" class="warn">Reject</button>
-              <button id="sendDraft" class="primary">Sandbox send</button>
-            </div>
+        <div class="panel-body stack">
+          <div>
+            <h3 id="leadTitle">No lead selected</h3>
+            <div id="leadMeta" class="subtitle">Select a lead to inspect source trail and draft status.</div>
           </div>
-          <div class="pane-body">
-            <div id="draftStatus" class="muted">No draft selected.</div>
-            <pre id="draftBody" class="gap"></pre>
+          <div id="leadTags" class="tags"></div>
+          <div class="draft-box">
+            <pre id="draftBody">No draft selected.</pre>
+          </div>
+          <div class="checklist">
+            <div class="check"><span class="dot"></span><span>Human approval required before provider queueing</span></div>
+            <div class="check"><span class="dot"></span><span>Global suppression checked before every send</span></div>
+            <div class="check"><span id="providerDot" class="dot danger-dot"></span><span id="providerCheck">Provider status unknown</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><h2>Lead Detail</h2></div>
+            <div class="panel-body"><pre id="leadJson">No lead selected.</pre></div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
+    <div id="status" class="status" style="margin-top:14px;">Ready.</div>
   </main>
 
   <script>
@@ -440,263 +368,188 @@
       leads: [],
       selectedLeadId: null,
       selectedDetail: null,
-      currentDraft: null
+      currentDraft: null,
+      metrics: {}
     };
 
     const $ = (id) => document.getElementById(id);
 
     function setStatus(text, kind = "") {
-      const node = $("status");
-      node.textContent = text;
-      node.className = `status ${kind}`;
+      $("status").textContent = text;
+      $("status").className = `status ${kind}`;
     }
 
     async function api(path, options = {}) {
-      const headers = {
-        "Content-Type": "application/json",
-        "X-Admin-Key": state.key,
-        ...(options.headers || {})
-      };
-      const response = await fetch(path, { ...options, headers });
+      const headers = {"Content-Type": "application/json", "X-Admin-Key": state.key, ...(options.headers || {})};
+      const response = await fetch(path, {...options, headers});
       const text = await response.text();
       let data;
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-      if (!response.ok) {
-        const detail = data.detail || data.raw || response.statusText;
-        throw new Error(Array.isArray(detail) ? JSON.stringify(detail) : detail);
-      }
+      try { data = text ? JSON.parse(text) : {}; } catch { data = {raw: text}; }
+      if (!response.ok) throw new Error(Array.isArray(data.detail) ? JSON.stringify(data.detail) : (data.detail || data.raw || response.statusText));
       return data;
     }
 
-    function samplePayload() {
-      return {
-        source_key: "manual",
-        query: "Sri Lanka SMB seed",
-        location: "Colombo, Sri Lanka",
-        manual_companies: [
-          {
-            name: "Lotus Bay Dental Clinic",
-            website_url: "https://example.com",
-            country: "Sri Lanka",
-            city: "Colombo",
-            industry: "clinic dental health",
-            source_trust: 0.75,
-            source_url: "manual research note",
-            digital_footprint: {
-              weak_mobile_ux: true,
-              missing_booking_flow: true,
-              portal_or_data_fit: true
-            },
-            contacts: [
-              {
-                email: "info@lotusbay.example",
-                email_type: "generic",
-                email_status: "verified",
-                processing_basis: "public business contact"
-              }
-            ]
-          },
-          {
-            name: "Ceylon Auto Traders",
-            country: "Sri Lanka",
-            city: "Kandy",
-            industry: "vehicle dealer auto",
-            source_trust: 0.68,
-            source_url: "approved directory import",
-            digital_footprint: {
-              low_digital_completeness: true,
-              portal_or_data_fit: true
-            },
-            contacts: [
-              {
-                email: "sales@ceylonauto.example",
-                email_type: "generic",
-                email_status: "unknown",
-                processing_basis: "public business contact"
-              }
-            ]
-          }
-        ]
-      };
-    }
-
     function renderMetrics(data = {}) {
+      state.metrics = data;
       const rows = [
         ["Companies", data.companies || 0],
         ["Contacts", data.contacts || 0],
         ["Suppressed", data.suppressed || 0],
         ["Approved", data.approved_drafts || 0],
-        ["Sent/queued", data.sent_or_queued || 0],
+        ["Queued", data.sent_or_queued || 0],
         ["Bounces", data.bounces || 0]
       ];
-      $("metrics").innerHTML = rows.map(([label, value]) => `
-        <div class="metric"><strong>${value}</strong><span>${label}</span></div>
-      `).join("");
+      $("metrics").innerHTML = rows.map(([label, value]) => `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`).join("");
+      const sync = data.provider_sync || {};
+      const ready = sync.google_places_configured && sync.openai_configured && sync.smartlead_configured;
+      $("providerHealth").textContent = `Sources: Google ${sync.google_places_configured ? "ready" : "missing"} / OpenAI ${sync.openai_configured ? "ready" : "missing"} / Smartlead ${sync.smartlead_configured ? "ready" : "missing"}`;
+      $("providerDot").className = ready ? "dot" : "dot danger-dot";
+      $("providerCheck").textContent = ready ? "Provider stack configured" : "Provider stack needs Vercel env keys";
     }
 
-    function renderLeads() {
-      const tbody = $("leads");
-      tbody.innerHTML = state.leads.map((lead) => `
-        <tr data-id="${lead.id}" class="${lead.id === state.selectedLeadId ? "active" : ""}">
-          <td><strong>${lead.name}</strong><div class="muted">${lead.website_url || "No website"}</div></td>
-          <td><span class="score">${lead.total_score ?? "-"}</span></td>
-          <td>${lead.industry || "-"}</td>
-          <td>${lead.city || "-"}</td>
-          <td>${lead.contact_count}</td>
-          <td>${lead.latest_draft_status || "-"}</td>
-        </tr>
-      `).join("");
-      tbody.querySelectorAll("tr").forEach((row) => {
-        row.addEventListener("click", () => selectLead(row.dataset.id));
-      });
+    function renderLeads(leads) {
+      state.leads = leads;
+      $("leads").innerHTML = leads.map((lead) => {
+        const quality = lead.contact_quality || "no contact";
+        const qualityClass = quality === "verified" ? "good" : quality === "risky" ? "warn" : "";
+        return `<div class="lead-card ${lead.id === state.selectedLeadId ? "active" : ""}" data-id="${lead.id}">
+          <div class="lead-top">
+            <div>
+              <div class="lead-name">${lead.name}</div>
+              <div class="lead-url">${lead.website_url || "No website recorded"}</div>
+            </div>
+            <div class="score">${lead.total_score ?? "-"}</div>
+          </div>
+          <div class="tags">
+            <span class="tag">${lead.industry || "unknown industry"}</span>
+            <span class="tag">${lead.city || lead.country || "Sri Lanka"}</span>
+            <span class="tag ${qualityClass}">${quality}</span>
+            <span class="tag">${lead.latest_draft_status || "no draft"}</span>
+          </div>
+        </div>`;
+      }).join("");
+      document.querySelectorAll(".lead-card").forEach((node) => node.addEventListener("click", () => selectLead(node.dataset.id)));
     }
 
-    function renderDetail() {
-      const detail = state.selectedDetail;
+    function renderLeadDetail(detail) {
       if (!detail) {
         $("leadTitle").textContent = "No lead selected";
-        $("leadMeta").textContent = "Select a lead from the table.";
-        $("leadReasons").innerHTML = "";
-        $("leadJson").textContent = "";
+        $("leadMeta").textContent = "Select a lead to inspect source trail and draft status.";
+        $("leadTags").innerHTML = "";
+        $("leadJson").textContent = "No lead selected.";
         renderDraft(null);
         return;
       }
-      const lead = detail.lead;
-      $("leadTitle").textContent = lead.name;
-      $("leadMeta").textContent = `${detail.company.city || "-"} | ${detail.company.industry || "-"} | ${detail.contacts.length} contacts`;
-      $("leadReasons").innerHTML = (lead.score_reasons || []).map((reason) => `<span class="pill">${reason}</span>`).join("");
+      $("leadTitle").textContent = detail.company.name;
+      $("leadMeta").textContent = `${detail.company.city || "Sri Lanka"} / ${detail.company.industry || "unknown"} / ${detail.contacts.length} contacts`;
+      $("leadTags").innerHTML = (detail.lead.score_reasons || []).map((item) => `<span class="tag">${item}</span>`).join("");
       $("leadJson").textContent = JSON.stringify(detail, null, 2);
     }
 
     function renderDraft(draft) {
       state.currentDraft = draft;
       if (!draft) {
-        $("draftStatus").textContent = "No draft selected.";
-        $("draftBody").textContent = "";
+        $("draftBody").textContent = "No draft selected.";
         return;
       }
-      $("draftStatus").textContent = `${draft.status} | ${draft.word_count} words | ${draft.proof_angle}`;
-      $("draftBody").textContent = `${draft.subject}\n\n${draft.body}\n\n${draft.compliance_footer}`;
+      $("draftBody").textContent = `${draft.status.toUpperCase()} / ${draft.word_count} words / ${draft.proof_angle}\n\n${draft.subject}\n\n${draft.body}\n\n${draft.compliance_footer}\n\nSource reason: ${draft.source_reason || draft.concrete_reason}\nRisk flags: ${(draft.risk_flags || []).join(", ") || "none"}`;
     }
 
-    async function loadAll() {
+    async function loadProfiles() {
+      const profiles = await api("/api/v1/research/profiles");
+      $("profile").innerHTML = profiles.map((profile) => `<option value="${profile.key}">${profile.label}</option>`).join("");
+    }
+
+    async function loadRuns() {
+      const runs = await api("/api/v1/research/runs");
+      $("runHistory").innerHTML = runs.slice(0, 4).map((run) => `<div class="lead-card">
+        <div class="lead-top"><div><div class="lead-name">${run.profile_key} / ${run.location}</div><div class="lead-url">${run.status} / seen ${run.companies_seen} / drafts ${run.drafts_created}</div></div><div class="score">${run.companies_created}</div></div>
+      </div>`).join("");
+    }
+
+    async function loadAll(kind = "recommendations") {
       const [metrics, leads] = await Promise.all([
         api("/api/v1/metrics"),
-        api("/api/v1/leads")
+        api(kind === "all" ? "/api/v1/leads" : "/api/v1/recommendations")
       ]);
       renderMetrics(metrics);
-      state.leads = leads;
-      renderLeads();
-      if (state.selectedLeadId) {
-        await selectLead(state.selectedLeadId, false);
-      }
+      renderLeads(leads);
+      await loadRuns();
+      if (state.selectedLeadId) await selectLead(state.selectedLeadId, false);
     }
 
-    async function selectLead(id, showStatus = true) {
+    async function selectLead(id, announce = true) {
       state.selectedLeadId = id;
-      if (showStatus) setStatus("Loading lead...");
       const detail = await api(`/api/v1/leads/${id}`);
-      state.selectedDetail = detail;
       const drafts = await api(`/api/v1/drafts?company_id=${id}`);
-      renderLeads();
-      renderDetail();
+      state.selectedDetail = detail;
+      renderLeads(state.leads);
+      renderLeadDetail(detail);
       renderDraft(drafts[0] || null);
-      if (showStatus) setStatus("Lead loaded.", "ok");
+      if (announce) setStatus("Lead loaded.", "ok");
     }
 
-    async function runDiscovery() {
-      setStatus("Running discovery...");
-      let payload = JSON.parse($("discoveryPayload").value);
-      if (Array.isArray(payload)) {
-        payload = { source_key: "manual", query: "manual import", manual_companies: payload };
-      }
-      const result = await api("/api/v1/discovery/runs", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      setStatus(`Discovery completed: ${result.companies_seen} seen, ${result.companies_created} created.`, "ok");
-      await loadAll();
-    }
-
-    async function enrichSelected() {
-      if (!state.selectedLeadId) return;
-      setStatus("Running enrichment...");
-      const result = await api(`/api/v1/leads/${state.selectedLeadId}/enrich`, { method: "POST", body: "{}" });
-      setStatus(result.status === "completed" ? "Enrichment completed." : `Enrichment ${result.status}: ${result.error || ""}`, result.status === "completed" ? "ok" : "error");
+    async function runResearch() {
+      setStatus("Running autonomous research...");
+      const payload = {
+        profile_key: $("profile").value,
+        location: $("location").value,
+        score_threshold: Number($("threshold").value || 72),
+        max_companies: Number($("maxCompanies").value || 20),
+        max_drafts: Number($("maxDrafts").value || 8),
+        create_drafts: true
+      };
+      const run = await api("/api/v1/research/runs", {method: "POST", body: JSON.stringify(payload)});
+      setStatus(`Research ${run.status}: seen ${run.companies_seen}, drafts ${run.drafts_created}.`, run.status === "completed" ? "ok" : "error");
       await loadAll();
     }
 
     async function draftSelected() {
       if (!state.selectedLeadId) return;
       setStatus("Generating draft...");
-      const draft = await api(`/api/v1/leads/${state.selectedLeadId}/drafts`, { method: "POST", body: "{}" });
+      const draft = await api(`/api/v1/leads/${state.selectedLeadId}/drafts`, {method: "POST", body: JSON.stringify({use_ai: true})});
       renderDraft(draft);
       await loadAll();
-      setStatus("Draft generated.", "ok");
+      setStatus("Draft ready.", "ok");
     }
 
-    async function approveCurrent(decision) {
+    async function approveCurrent() {
       if (!state.currentDraft) return;
-      setStatus(`${decision} draft...`);
-      const draft = await api(`/api/v1/drafts/${state.currentDraft.id}/approval`, {
-        method: "POST",
-        body: JSON.stringify({ approver_email: "ops@ardeno.studio", decision })
-      });
+      const draft = await api(`/api/v1/drafts/${state.currentDraft.id}/approval`, {method: "POST", body: JSON.stringify({approver_email: "ops@ardeno.studio", decision: "approved"})});
       renderDraft(draft);
       await loadAll();
-      setStatus(`Draft ${decision}.`, "ok");
+      setStatus("Draft approved.", "ok");
     }
 
-    async function sendCurrent() {
+    async function approveAndSend() {
       if (!state.currentDraft) return;
-      setStatus("Sending to sandbox...");
-      const message = await api(`/api/v1/drafts/${state.currentDraft.id}/send`, {
-        method: "POST",
-        body: JSON.stringify({ sandbox: true })
-      });
+      const sandbox = $("sendMode").value === "sandbox";
+      const msg = await api(`/api/v1/drafts/${state.currentDraft.id}/approve-and-send`, {method: "POST", body: JSON.stringify({sandbox})});
       await loadAll();
-      setStatus(`Sandbox message queued: ${message.status}.`, "ok");
-    }
-
-    async function addSuppressionFromForm() {
-      setStatus("Adding suppression...");
-      const payload = {
-        value_type: $("suppressionType").value,
-        value: $("suppressionValue").value,
-        reason: $("suppressionReason").value || "manual suppression",
-        source: "dashboard"
-      };
-      await api("/api/v1/suppressions", { method: "POST", body: JSON.stringify(payload) });
-      await loadAll();
-      setStatus("Suppression saved.", "ok");
+      setStatus(`${msg.provider}: ${msg.status}`, "ok");
     }
 
     function bind() {
       $("apiKey").value = state.key;
-      $("discoveryPayload").value = JSON.stringify(samplePayload(), null, 2);
       $("saveKey").addEventListener("click", () => {
         state.key = $("apiKey").value.trim();
         localStorage.setItem("ardenoLeadKey", state.key);
         setStatus("Key saved.", "ok");
       });
       $("refresh").addEventListener("click", () => loadAll().catch((error) => setStatus(error.message, "error")));
-      $("sample").addEventListener("click", () => {
-        $("discoveryPayload").value = JSON.stringify(samplePayload(), null, 2);
-      });
-      $("runDiscovery").addEventListener("click", () => runDiscovery().catch((error) => setStatus(error.message, "error")));
-      $("enrichLead").addEventListener("click", () => enrichSelected().catch((error) => setStatus(error.message, "error")));
+      $("loadRecommendations").addEventListener("click", () => loadAll("recommendations").catch((error) => setStatus(error.message, "error")));
+      $("loadLeads").addEventListener("click", () => loadAll("all").catch((error) => setStatus(error.message, "error")));
+      $("runResearch").addEventListener("click", () => runResearch().catch((error) => setStatus(error.message, "error")));
       $("draftLead").addEventListener("click", () => draftSelected().catch((error) => setStatus(error.message, "error")));
-      $("approveDraft").addEventListener("click", () => approveCurrent("approved").catch((error) => setStatus(error.message, "error")));
-      $("rejectDraft").addEventListener("click", () => approveCurrent("rejected").catch((error) => setStatus(error.message, "error")));
-      $("sendDraft").addEventListener("click", () => sendCurrent().catch((error) => setStatus(error.message, "error")));
-      $("addSuppression").addEventListener("click", () => addSuppressionFromForm().catch((error) => setStatus(error.message, "error")));
+      $("approveDraft").addEventListener("click", () => approveCurrent().catch((error) => setStatus(error.message, "error")));
+      $("approveSend").addEventListener("click", () => approveAndSend().catch((error) => setStatus(error.message, "error")));
     }
 
     bind();
     if (state.key) {
-      loadAll().catch((error) => setStatus(error.message, "error"));
+      loadProfiles().then(() => loadAll()).catch((error) => setStatus(error.message, "error"));
     } else {
-      setStatus("Enter the admin key to load data.");
+      setStatus("Enter the admin key to load operations data.");
     }
   </script>
 </body>

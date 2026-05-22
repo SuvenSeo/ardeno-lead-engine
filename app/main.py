@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from app.api import router
-from app.db import SessionLocal, init_db
+from app.db import SessionLocal, init_db, is_database_operational
 from app.services.seed import seed_defaults
 
 
@@ -16,6 +16,8 @@ app.include_router(router)
 
 @app.on_event("startup")
 def startup() -> None:
+    if not is_database_operational():
+        return
     init_db()
     db = SessionLocal()
     try:
