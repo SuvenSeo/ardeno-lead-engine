@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ardeno Lead Engine</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172026;
+      --muted: #5e6972;
+      --line: #d8dee4;
+      --panel: #f6f8fa;
+      --white: #ffffff;
+      --blue: #1f5eff;
+      --green: #147d64;
+      --red: #b42318;
+      --amber: #8a6116;
+      --shadow: 0 10px 30px rgba(23, 32, 38, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: #eef2f5;
+      letter-spacing: 0;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 18px 28px;
+      border-bottom: 1px solid var(--line);
+      background: var(--white);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    h1 {
+      font-size: 20px;
+      line-height: 1.2;
+      margin: 0;
+      font-weight: 700;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 430px) 1fr;
+      gap: 18px;
+      padding: 18px;
+      max-width: 1500px;
+      margin: 0 auto;
+    }
+
+    section, aside {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .band {
+      padding: 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .band:last-child { border-bottom: 0; }
+
+    h2 {
+      font-size: 14px;
+      margin: 0 0 12px;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fbfcfd;
+      color: var(--ink);
+      font: inherit;
+      font-size: 13px;
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 310px;
+      resize: vertical;
+      font-family: "Cascadia Code", Consolas, monospace;
+      line-height: 1.45;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(31, 94, 255, 0.12);
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #f7f9fb;
+      color: var(--ink);
+      min-height: 36px;
+      padding: 8px 11px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: var(--white);
+    }
+
+    button.good {
+      background: var(--green);
+      border-color: var(--green);
+      color: var(--white);
+    }
+
+    button.warn {
+      background: #fff6df;
+      border-color: #f0d088;
+      color: var(--amber);
+    }
+
+    button.danger {
+      background: #fff1f0;
+      border-color: #f4b6b1;
+      color: var(--red);
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .status {
+      min-height: 24px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status.error { color: var(--red); }
+    .status.ok { color: var(--green); }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(96px, 1fr));
+      gap: 10px;
+      padding: 16px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      min-width: 0;
+    }
+
+    .metric {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 66px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    table {
+      width: 100%;
+      min-width: 760px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    th {
+      font-size: 12px;
+      color: var(--muted);
+      background: #fbfcfd;
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      white-space: nowrap;
+    }
+
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: #f3f7ff; }
+    tbody tr.active { background: #e8efff; }
+
+    .score {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 46px;
+      height: 28px;
+      border-radius: 999px;
+      background: #e7f5ef;
+      color: var(--green);
+      font-weight: 800;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #eef2f5;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      margin: 0 4px 4px 0;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-rows: auto minmax(360px, 1fr);
+      min-width: 0;
+    }
+
+    .workspace > div {
+      min-width: 0;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 54vh;
+      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .detail {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(280px, 1fr);
+      gap: 14px;
+      padding: 16px;
+      background: var(--white);
+    }
+
+    .pane {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      min-width: 0;
+    }
+
+    .pane-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      background: #fbfcfd;
+    }
+
+    .pane-body {
+      padding: 12px;
+    }
+
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      font-family: "Cascadia Code", Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #25313a;
+    }
+
+    .muted { color: var(--muted); }
+    .gap { margin-top: 10px; }
+
+    @media (max-width: 980px) {
+      header, main, .detail, .split {
+        grid-template-columns: 1fr;
+      }
+
+      header { position: static; }
+      th { position: static; }
+      .metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); }
+      .table-wrap { max-height: none; }
+      .workspace { overflow: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ardeno Lead Engine</h1>
+    <div class="row">
+      <input id="apiKey" type="password" placeholder="X-Admin-Key" autocomplete="off">
+      <button id="saveKey">Save key</button>
+      <button id="refresh" class="primary">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <aside>
+      <div class="band">
+        <h2>Discovery</h2>
+        <textarea id="discoveryPayload" spellcheck="false"></textarea>
+        <div class="row gap">
+          <button id="sample">Sample</button>
+          <button id="runDiscovery" class="primary">Run discovery</button>
+        </div>
+      </div>
+      <div class="band">
+        <h2>Suppression</h2>
+        <div class="split">
+          <select id="suppressionType">
+            <option value="email">Email</option>
+            <option value="domain">Domain</option>
+            <option value="company">Company</option>
+          </select>
+          <input id="suppressionValue" placeholder="value">
+        </div>
+        <input id="suppressionReason" class="gap" placeholder="reason" value="manual opt-out">
+        <button id="addSuppression" class="danger gap">Add suppression</button>
+      </div>
+      <div class="band">
+        <div id="status" class="status">Ready.</div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div>
+        <div id="metrics" class="metrics"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30%;">Company</th>
+                <th style="width: 12%;">Score</th>
+                <th style="width: 18%;">Industry</th>
+                <th style="width: 14%;">City</th>
+                <th style="width: 12%;">Contacts</th>
+                <th style="width: 14%;">Draft</th>
+              </tr>
+            </thead>
+            <tbody id="leads"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="detail">
+        <div class="pane">
+          <div class="pane-head">
+            <strong id="leadTitle">No lead selected</strong>
+            <div class="row">
+              <button id="enrichLead">Enrich</button>
+              <button id="draftLead" class="primary">Draft</button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div id="leadMeta" class="muted">Select a lead from the table.</div>
+            <div id="leadReasons" class="gap"></div>
+            <pre id="leadJson" class="gap"></pre>
+          </div>
+        </div>
+
+        <div class="pane">
+          <div class="pane-head">
+            <strong>Draft approval</strong>
+            <div class="row">
+              <button id="approveDraft" class="good">Approve</button>
+              <button id="rejectDraft" class="warn">Reject</button>
+              <button id="sendDraft" class="primary">Sandbox send</button>
+            </div>
+          </div>
+          <div class="pane-body">
+            <div id="draftStatus" class="muted">No draft selected.</div>
+            <pre id="draftBody" class="gap"></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      key: localStorage.getItem("ardenoLeadKey") || "",
+      leads: [],
+      selectedLeadId: null,
+      selectedDetail: null,
+      currentDraft: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function setStatus(text, kind = "") {
+      const node = $("status");
+      node.textContent = text;
+      node.className = `status ${kind}`;
+    }
+
+    async function api(path, options = {}) {
+      const headers = {
+        "Content-Type": "application/json",
+        "X-Admin-Key": state.key,
+        ...(options.headers || {})
+      };
+      const response = await fetch(path, { ...options, headers });
+      const text = await response.text();
+      let data;
+      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+      if (!response.ok) {
+        const detail = data.detail || data.raw || response.statusText;
+        throw new Error(Array.isArray(detail) ? JSON.stringify(detail) : detail);
+      }
+      return data;
+    }
+
+    function samplePayload() {
+      return {
+        source_key: "manual",
+        query: "Sri Lanka SMB seed",
+        location: "Colombo, Sri Lanka",
+        manual_companies: [
+          {
+            name: "Lotus Bay Dental Clinic",
+            website_url: "https://example.com",
+            country: "Sri Lanka",
+            city: "Colombo",
+            industry: "clinic dental health",
+            source_trust: 0.75,
+            source_url: "manual research note",
+            digital_footprint: {
+              weak_mobile_ux: true,
+              missing_booking_flow: true,
+              portal_or_data_fit: true
+            },
+            contacts: [
+              {
+                email: "info@lotusbay.example",
+                email_type: "generic",
+                email_status: "verified",
+                processing_basis: "public business contact"
+              }
+            ]
+          },
+          {
+            name: "Ceylon Auto Traders",
+            country: "Sri Lanka",
+            city: "Kandy",
+            industry: "vehicle dealer auto",
+            source_trust: 0.68,
+            source_url: "approved directory import",
+            digital_footprint: {
+              low_digital_completeness: true,
+              portal_or_data_fit: true
+            },
+            contacts: [
+              {
+                email: "sales@ceylonauto.example",
+                email_type: "generic",
+                email_status: "unknown",
+                processing_basis: "public business contact"
+              }
+            ]
+          }
+        ]
+      };
+    }
+
+    function renderMetrics(data = {}) {
+      const rows = [
+        ["Companies", data.companies || 0],
+        ["Contacts", data.contacts || 0],
+        ["Suppressed", data.suppressed || 0],
+        ["Approved", data.approved_drafts || 0],
+        ["Sent/queued", data.sent_or_queued || 0],
+        ["Bounces", data.bounces || 0]
+      ];
+      $("metrics").innerHTML = rows.map(([label, value]) => `
+        <div class="metric"><strong>${value}</strong><span>${label}</span></div>
+      `).join("");
+    }
+
+    function renderLeads() {
+      const tbody = $("leads");
+      tbody.innerHTML = state.leads.map((lead) => `
+        <tr data-id="${lead.id}" class="${lead.id === state.selectedLeadId ? "active" : ""}">
+          <td><strong>${lead.name}</strong><div class="muted">${lead.website_url || "No website"}</div></td>
+          <td><span class="score">${lead.total_score ?? "-"}</span></td>
+          <td>${lead.industry || "-"}</td>
+          <td>${lead.city || "-"}</td>
+          <td>${lead.contact_count}</td>
+          <td>${lead.latest_draft_status || "-"}</td>
+        </tr>
+      `).join("");
+      tbody.querySelectorAll("tr").forEach((row) => {
+        row.addEventListener("click", () => selectLead(row.dataset.id));
+      });
+    }
+
+    function renderDetail() {
+      const detail = state.selectedDetail;
+      if (!detail) {
+        $("leadTitle").textContent = "No lead selected";
+        $("leadMeta").textContent = "Select a lead from the table.";
+        $("leadReasons").innerHTML = "";
+        $("leadJson").textContent = "";
+        renderDraft(null);
+        return;
+      }
+      const lead = detail.lead;
+      $("leadTitle").textContent = lead.name;
+      $("leadMeta").textContent = `${detail.company.city || "-"} | ${detail.company.industry || "-"} | ${detail.contacts.length} contacts`;
+      $("leadReasons").innerHTML = (lead.score_reasons || []).map((reason) => `<span class="pill">${reason}</span>`).join("");
+      $("leadJson").textContent = JSON.stringify(detail, null, 2);
+    }
+
+    function renderDraft(draft) {
+      state.currentDraft = draft;
+      if (!draft) {
+        $("draftStatus").textContent = "No draft selected.";
+        $("draftBody").textContent = "";
+        return;
+      }
+      $("draftStatus").textContent = `${draft.status} | ${draft.word_count} words | ${draft.proof_angle}`;
+      $("draftBody").textContent = `${draft.subject}\n\n${draft.body}\n\n${draft.compliance_footer}`;
+    }
+
+    async function loadAll() {
+      const [metrics, leads] = await Promise.all([
+        api("/api/v1/metrics"),
+        api("/api/v1/leads")
+      ]);
+      renderMetrics(metrics);
+      state.leads = leads;
+      renderLeads();
+      if (state.selectedLeadId) {
+        await selectLead(state.selectedLeadId, false);
+      }
+    }
+
+    async function selectLead(id, showStatus = true) {
+      state.selectedLeadId = id;
+      if (showStatus) setStatus("Loading lead...");
+      const detail = await api(`/api/v1/leads/${id}`);
+      state.selectedDetail = detail;
+      const drafts = await api(`/api/v1/drafts?company_id=${id}`);
+      renderLeads();
+      renderDetail();
+      renderDraft(drafts[0] || null);
+      if (showStatus) setStatus("Lead loaded.", "ok");
+    }
+
+    async function runDiscovery() {
+      setStatus("Running discovery...");
+      let payload = JSON.parse($("discoveryPayload").value);
+      if (Array.isArray(payload)) {
+        payload = { source_key: "manual", query: "manual import", manual_companies: payload };
+      }
+      const result = await api("/api/v1/discovery/runs", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      setStatus(`Discovery completed: ${result.companies_seen} seen, ${result.companies_created} created.`, "ok");
+      await loadAll();
+    }
+
+    async function enrichSelected() {
+      if (!state.selectedLeadId) return;
+      setStatus("Running enrichment...");
+      const result = await api(`/api/v1/leads/${state.selectedLeadId}/enrich`, { method: "POST", body: "{}" });
+      setStatus(result.status === "completed" ? "Enrichment completed." : `Enrichment ${result.status}: ${result.error || ""}`, result.status === "completed" ? "ok" : "error");
+      await loadAll();
+    }
+
+    async function draftSelected() {
+      if (!state.selectedLeadId) return;
+      setStatus("Generating draft...");
+      const draft = await api(`/api/v1/leads/${state.selectedLeadId}/drafts`, { method: "POST", body: "{}" });
+      renderDraft(draft);
+      await loadAll();
+      setStatus("Draft generated.", "ok");
+    }
+
+    async function approveCurrent(decision) {
+      if (!state.currentDraft) return;
+      setStatus(`${decision} draft...`);
+      const draft = await api(`/api/v1/drafts/${state.currentDraft.id}/approval`, {
+        method: "POST",
+        body: JSON.stringify({ approver_email: "ops@ardeno.studio", decision })
+      });
+      renderDraft(draft);
+      await loadAll();
+      setStatus(`Draft ${decision}.`, "ok");
+    }
+
+    async function sendCurrent() {
+      if (!state.currentDraft) return;
+      setStatus("Sending to sandbox...");
+      const message = await api(`/api/v1/drafts/${state.currentDraft.id}/send`, {
+        method: "POST",
+        body: JSON.stringify({ sandbox: true })
+      });
+      await loadAll();
+      setStatus(`Sandbox message queued: ${message.status}.`, "ok");
+    }
+
+    async function addSuppressionFromForm() {
+      setStatus("Adding suppression...");
+      const payload = {
+        value_type: $("suppressionType").value,
+        value: $("suppressionValue").value,
+        reason: $("suppressionReason").value || "manual suppression",
+        source: "dashboard"
+      };
+      await api("/api/v1/suppressions", { method: "POST", body: JSON.stringify(payload) });
+      await loadAll();
+      setStatus("Suppression saved.", "ok");
+    }
+
+    function bind() {
+      $("apiKey").value = state.key;
+      $("discoveryPayload").value = JSON.stringify(samplePayload(), null, 2);
+      $("saveKey").addEventListener("click", () => {
+        state.key = $("apiKey").value.trim();
+        localStorage.setItem("ardenoLeadKey", state.key);
+        setStatus("Key saved.", "ok");
+      });
+      $("refresh").addEventListener("click", () => loadAll().catch((error) => setStatus(error.message, "error")));
+      $("sample").addEventListener("click", () => {
+        $("discoveryPayload").value = JSON.stringify(samplePayload(), null, 2);
+      });
+      $("runDiscovery").addEventListener("click", () => runDiscovery().catch((error) => setStatus(error.message, "error")));
+      $("enrichLead").addEventListener("click", () => enrichSelected().catch((error) => setStatus(error.message, "error")));
+      $("draftLead").addEventListener("click", () => draftSelected().catch((error) => setStatus(error.message, "error")));
+      $("approveDraft").addEventListener("click", () => approveCurrent("approved").catch((error) => setStatus(error.message, "error")));
+      $("rejectDraft").addEventListener("click", () => approveCurrent("rejected").catch((error) => setStatus(error.message, "error")));
+      $("sendDraft").addEventListener("click", () => sendCurrent().catch((error) => setStatus(error.message, "error")));
+      $("addSuppression").addEventListener("click", () => addSuppressionFromForm().catch((error) => setStatus(error.message, "error")));
+    }
+
+    bind();
+    if (state.key) {
+      loadAll().catch((error) => setStatus(error.message, "error"));
+    } else {
+      setStatus("Enter the admin key to load data.");
+    }
+  </script>
+</body>
+</html>
