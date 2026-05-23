@@ -1,6 +1,8 @@
 # Ardeno Lead Engine
 
-Private internal service for compliance-first lead discovery, enrichment, scoring, draft approval, sandbox sending, suppression, and outreach metrics.
+Sanitized internal-tools project for compliance-first lead discovery, enrichment, scoring, draft approval, sandbox sending, suppression, and outreach metrics.
+
+This repository is public to show the product and engineering approach. Real deployment requires private configuration, verified sender infrastructure, and operator approval before any production outreach.
 
 ## What v1 Does
 
